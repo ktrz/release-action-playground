@@ -43,12 +43,13 @@ jobs:
         run: git config user.email "k.trzesniewski@gmail.com" && git config user.name "ChrisBotLabs"
 
       - name: Release a specific project
+        env:
+          GITHUB_TOKEN: ${{ secrets.AWESOME_ACCESS_TOKEN }}
         run: npx nx version ${{ github.event.inputs.target_project }} --releaseAs=${{ github.event.inputs.release_as }} --skipProjectChangelog=true --noVerify=true --preid=rc --push
 
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.AWESOME_ACCESS_TOKEN }}
         run: npx nx publish ${{ github.event.inputs.target_project }}
 
       - name: Push tags to github
