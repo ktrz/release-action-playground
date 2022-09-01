@@ -1,0 +1,57 @@
+name: Release NPM packages
+
+env:
+  NX_MAX_PARALLEL: 2
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_project:
+        type: 'choice'
+        description: 'The target project to release.'
+        required: true
+        options:
+          - test-lib
+      release_as:
+        type: 'choice'
+        description: 'The release type. It can be one of: major, minor, patch, premajor, preminor, prepatch, or prerelease. Defaults to "patch"'
+        required: true
+        default: 'patch'
+        options:
+          - major
+          - minor
+          - patch
+          - premajor
+          - preminor
+          - prepatch
+          - prerelease
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # This next line locks this workflow to the main branch, so it won't be started on branches other than main
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup git user to "ThisDot Open-Source"
+        shell: bash
+        run: git config user.email "k.trzesniewski@gmail.com" && git config user.name "ChrisBotLabs"
+
+      - name: Release a specific project
+        run: npx nx version ${{ github.event.inputs.target_project }} --releaseAs=${{ github.event.inputs.release_as }} --skipProjectChangelog=true --noVerify=true --preid=rc --push
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AWESOME_ACCESS_TOKEN }}
+        run: npx nx publish ${{ github.event.inputs.target_project }}
+
+      - name: Push tags to github
+        env:
+          GITHUB_TOKEN: ${{ secrets.AWESOME_ACCESS_TOKEN }}
+        run: git push --tags
